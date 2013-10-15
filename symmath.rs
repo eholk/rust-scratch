@@ -45,15 +45,39 @@ impl ToStr for Expr {
     }
 }
 
-impl Mul<~Expr, ~Expr> for ~Expr {
-    fn mul(&self, rhs: &~Expr) -> ~Expr {
-        ~Mul(self.clone(), rhs.clone())
+trait Embed {
+    fn to_expr(&self) -> ~Expr;
+}
+
+impl Embed for Expr {
+    fn to_expr(&self) -> ~Expr { ~self.clone() }
+}
+
+impl Embed for ~Expr {
+    fn to_expr(&self) -> ~Expr { self.clone() }
+}
+
+impl<T: Embed> Mul<T, ~Expr> for ~Expr {
+    fn mul(&self, rhs: &T) -> ~Expr {
+        ~Mul(self.clone(), rhs.to_expr())
     }
 }
 
-impl Add<~Expr, ~Expr> for ~Expr {
-    fn add(&self, rhs: &~Expr) -> ~Expr {
-        ~Add(self.clone(), rhs.clone())
+impl<T: Embed> Add<T, ~Expr> for ~Expr {
+    fn add(&self, rhs: &T) -> ~Expr {
+        ~Add(self.clone(), rhs.to_expr())
+    }
+}
+
+impl<T: Embed> Mul<T, ~Expr> for Expr {
+    fn mul(&self, rhs: &T) -> ~Expr {
+        ~Mul(~self.clone(), rhs.to_expr())
+    }
+}
+
+impl<T: Embed> Add<T, ~Expr> for Expr {
+    fn add(&self, rhs: &T) -> ~Expr {
+        ~Add(~self.clone(), rhs.to_expr())
     }
 }
 
@@ -64,7 +88,7 @@ fn constructors() {
 }
 
 fn operators() {
-    let e = ~Var(~"a") * (~Var(~"b") + ~Var(~"c"));
+    let e = Var(~"a") * (Var(~"b") + Var(~"c"));
 
     println!("{:s} = {:s}", e.to_str(), e.simplify().to_str());
 }
